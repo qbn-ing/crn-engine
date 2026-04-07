@@ -1,0 +1,18 @@
+{
+    "argv": [
+        "dotnet",
+        "d:\\Test\\crn\\crn-engine\\CRNKernel\\bin\\Debug\\netcoreapp3.1\\CRNKernel.dll",
+        "--connection-file",
+        "{connection_file}"
+    ],
+    "display_name": "CRN (F#)",
+    "language": "crn",
+    "name": "crn",
+    "codemirror_mode": {
+        "name": "null",
+        "version": 1
+    },
+    "env": {
+        "JUPYTER_CONNECTION_FILE": "{connection_file}"
+    }
+}

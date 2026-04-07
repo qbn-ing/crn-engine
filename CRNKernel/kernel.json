@@ -1,0 +1,15 @@
+{
+    "argv": [
+        "dotnet",
+        "__KERNEL_PATH__",
+        "--connection-file",
+        "{connection_file}"
+    ],
+    "display_name": "CRN (F#)",
+    "language": "crn",
+    "name": "crn",
+    "codemirror_mode": "text/plain",
+    "env": {
+        "JUPYTER_CONNECTION_FILE": "{connection_file}"
+    }
+}

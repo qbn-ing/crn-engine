@@ -1,0 +1,15 @@
+{
+    "argv": [
+        "dotnet",
+        "CRNKernel.dll",
+        "--connection-file",
+        "{connection_file}"
+    ],
+    "display_name": "CRN (F#)",
+    "language": "crn",
+    "name": "crn-fsharp",
+    "codemirror_mode": {
+        "name": "crn",
+        "version": 1
+    }
+}

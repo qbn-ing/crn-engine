@@ -433,3 +433,6 @@ CRNEngine/CRNEngineDotNet/version.txt
 /SiteGraphReactor/SinglePageApplication/Content
 /SiteGraphReactor/SiteGraphReactorTSWrapper/Content
 /SiteGraphReactor/SpeciesViewer/Content
+
+*.csv
+**/.qwen

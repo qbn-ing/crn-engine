@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
+    <HighEntropyVA>True</HighEntropyVA>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <AssemblyName>CRNKernel</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Preprocessor.fs" />
+    <Compile Include="ErrorHandling.fs" />
+    <Compile Include="MacroProcessor.fs" />
+    <Compile Include="KernelState.fs" />
+    <Compile Include="CodeParser.fs" />
+    <Compile Include="ExecutionEngine.fs" />
+    <Compile Include="Visualization.fs" />
+    <Compile Include="JupyterProtocol.fs" />
+    <Compile Include="Kernel.fs" />
+    <Compile Include="Program.fs" />
+    <None Include="paket.references" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CRNEngine\CliLibrary\CliLibrary.fsproj" />
+    <ProjectReference Include="..\CRNEngine\CRNEngineDotNet\CRNEngineDotNet.fsproj" />
+    <ProjectReference Include="..\ClassicDSD\ClassicDSDDotNet\ClassicDSDDotNet.fsproj" />
+    <ProjectReference Include="..\ClassicGEC\ClassicGECDotNet\ClassicGECDotNet.fsproj" />
+    <ProjectReference Include="..\MomentClosure\MomentClosure\MomentClosure.fsproj" />
+    <ProjectReference Include="..\Oslo\Oslo.FSharp\Oslo.FSharp.fsproj" />
+    <ProjectReference Include="..\PDESolvers\ReactionDiffusion\ReactionDiffusion.fsproj" />
+    <ProjectReference Include="..\RulesDSD\RulesDSD\RulesDSD.fsproj" />
+    <ProjectReference Include="..\Filzbach.FSharp\Filzbach.FSharp.Portable.fsproj" />
+    <ProjectReference Include="..\ParserCombinators\ParserCombinators\ParserCombinators.fsproj" />
+    <ProjectReference Include="..\FSharpIDD\FSharpIDD\FSharpIDD.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NetMQ" Version="4.0.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+</Project>

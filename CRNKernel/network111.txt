@@ -1,0 +1,424 @@
+directive simulation { 
+  final=4000; 
+  plots=[res;res1;res2];
+}
+directive simulator deterministic
+directive parameters [ k = 0.003; u = 0.1 ]
+
+directive rates [
+  res = [c0]-[c1];
+  res1 = [H0P]-[H0N];
+  res2 = [H1P] - [H1N]
+]	
+
+// === 输入信号===
+| 0 X1P | 1 X1N    // X1
+| 1 X2P | 0 X2N    // X2 
+| 1 CB             //
+
+// === 训练后权重 (双轨表示) ===
+
+// --- N0 权重 ---
+| 2.94304066 W00P | 0 W00N      // W00 = -2.943 → 贡献 +2.943
+| 0 W01P | 2.73212848 W01N      // W01 = -2.732
+| 0 W02P | 3.90841656 W02N      // W02 = -3.908
+
+// --- N1 权重 ---
+| 0 W10P | 2.62188713 W10N      // W10 = +2.622 → 贡献 -2.622
+| 0 W11P | 3.38384533 W11N      // W11 = -3.384
+| 0 W12P | 2.60482672 W12N      // W12 = -2.605
+
+// --- N2 权重 ---
+| 0 W20P | 3.77539904 W20N      // W20 = +3.775 → 贡献 -3.775
+| 4.05530305 W21P | 0 W21N      // W21 = +4.055
+| 0 W22P | 3.68841413 W22N      // W22 = -3.688
+
+// === 中间变量 ===
+| 0 H0P | 0 H0N
+| 0 H1P | 0 H1N
+| 0 c0  | 0 c1
+
+// === 时钟 ===
+| 1 clock1 | 1e-6 clock2 | 1e-6 clock3 | 1e-6 clock4 | 1e-6 clock5 | 1 clock6
+
+
+| clock1 + clock2 + CB ->{0.005} clock2 + clock2+ CB
+| clock2 + clock3+ CB ->{0.005} clock3 + clock3+ CB
+| clock3 + clock4 + CB->{0.005} clock4 + clock4+ CB
+| clock4 + clock5 + CB ->{0.005} clock5 + clock5+ CB
+| clock5 + clock6+ CB ->{0.005} clock6 + clock6+ CB
+| clock6 + clock1 + CB->{0.005} clock1 + clock1+ CB
+
+// === 神经元调用 ===
+//需要三时钟
+| 1 NEURON_33_local_c1
+| 1e-6 NEURON_33_local_c2
+| 1e-6 NEURON_33_local_c3
+| 1e-6 NEURON_33_local_c4
+| 1e-6 NEURON_33_local_c5
+| 1 NEURON_33_local_c6
+| 0 NEURON_33_local_YTMP
+| 0 NEURON_33_local_Y0
+| 0 NEURON_33_local_Y1
+| 0 NEURON_33_local_YTMP0
+| 0 NEURON_33_local_YTMP1
+
+
+| NEURON_33_local_c1 + NEURON_33_local_c2 + clock1 ->{0.035} NEURON_33_local_c2 + NEURON_33_local_c2+ clock1
+| NEURON_33_local_c2 + NEURON_33_local_c3+ clock1 ->{0.035} NEURON_33_local_c3 + NEURON_33_local_c3+ clock1
+| NEURON_33_local_c3 + NEURON_33_local_c4 + clock1->{0.035} NEURON_33_local_c4 + NEURON_33_local_c4+ clock1
+| NEURON_33_local_c4 + NEURON_33_local_c5 + clock1 ->{0.035} NEURON_33_local_c5 + NEURON_33_local_c5+ clock1
+| NEURON_33_local_c5 + NEURON_33_local_c6+ clock1 ->{0.035} NEURON_33_local_c6 + NEURON_33_local_c6+ clock1
+| NEURON_33_local_c6 + NEURON_33_local_c1 + clock1->{0.035} NEURON_33_local_c1 + NEURON_33_local_c1+ clock1
+//第一步，MAC计算
+
+
+| 0 NEURON_33_local_MACC_33_local_Y3
+| 0 NEURON_33_local_MACC_33_local_Y4
+| 0 NEURON_33_local_MACC_33_local_Y5
+| 0 NEURON_33_local_MACC_33_local_Y6
+
+
+| 0 NEURON_33_local_MACC_33_local_MULC_66_local_TMP1
+| 0 NEURON_33_local_MACC_33_local_MULC_66_local_TMP2
+| 0 NEURON_33_local_MACC_33_local_MULC_66_local_TMP3
+| 0 NEURON_33_local_MACC_33_local_MULC_66_local_TMP4
+
+|X1P+W01P+NEURON_33_local_c1->{2}X1P+W01P+NEURON_33_local_MACC_33_local_MULC_66_local_TMP1+NEURON_33_local_c1
+|NEURON_33_local_MACC_33_local_MULC_66_local_TMP1+NEURON_33_local_c1->{2}NEURON_33_local_c1
+
+|X1N+W01N+NEURON_33_local_c1->{2}X1N+W01N+NEURON_33_local_MACC_33_local_MULC_66_local_TMP2+NEURON_33_local_c1
+|NEURON_33_local_MACC_33_local_MULC_66_local_TMP2+NEURON_33_local_c1->{2}NEURON_33_local_c1
+
+|X1P+W01N+NEURON_33_local_c1->{2}X1P+W01N+NEURON_33_local_MACC_33_local_MULC_66_local_TMP3+NEURON_33_local_c1
+|NEURON_33_local_MACC_33_local_MULC_66_local_TMP3+NEURON_33_local_c1->{2}NEURON_33_local_c1
+
+|X1N+W01P+NEURON_33_local_c1->{2}X1N+W01P+NEURON_33_local_MACC_33_local_MULC_66_local_TMP4+NEURON_33_local_c1
+|NEURON_33_local_MACC_33_local_MULC_66_local_TMP4+NEURON_33_local_c1->{2}NEURON_33_local_c1
+
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_66_local_TMP1->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_66_local_TMP1+NEURON_33_local_MACC_33_local_Y3
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_66_local_TMP2->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_66_local_TMP2+NEURON_33_local_MACC_33_local_Y3
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y3->{2}NEURON_33_local_c1
+
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_66_local_TMP3->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_66_local_TMP3+NEURON_33_local_MACC_33_local_Y4
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_66_local_TMP4->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_66_local_TMP4+NEURON_33_local_MACC_33_local_Y4
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y4->{2}NEURON_33_local_c1
+
+
+| 0 NEURON_33_local_MACC_33_local_MULC_67_local_TMP1
+| 0 NEURON_33_local_MACC_33_local_MULC_67_local_TMP2
+| 0 NEURON_33_local_MACC_33_local_MULC_67_local_TMP3
+| 0 NEURON_33_local_MACC_33_local_MULC_67_local_TMP4
+
+|X2P+W02P+NEURON_33_local_c1->{2}X2P+W02P+NEURON_33_local_MACC_33_local_MULC_67_local_TMP1+NEURON_33_local_c1
+|NEURON_33_local_MACC_33_local_MULC_67_local_TMP1+NEURON_33_local_c1->{2}NEURON_33_local_c1
+
+|X2N+W02N+NEURON_33_local_c1->{2}X2N+W02N+NEURON_33_local_MACC_33_local_MULC_67_local_TMP2+NEURON_33_local_c1
+|NEURON_33_local_MACC_33_local_MULC_67_local_TMP2+NEURON_33_local_c1->{2}NEURON_33_local_c1
+
+|X2P+W02N+NEURON_33_local_c1->{2}X2P+W02N+NEURON_33_local_MACC_33_local_MULC_67_local_TMP3+NEURON_33_local_c1
+|NEURON_33_local_MACC_33_local_MULC_67_local_TMP3+NEURON_33_local_c1->{2}NEURON_33_local_c1
+
+|X2N+W02P+NEURON_33_local_c1->{2}X2N+W02P+NEURON_33_local_MACC_33_local_MULC_67_local_TMP4+NEURON_33_local_c1
+|NEURON_33_local_MACC_33_local_MULC_67_local_TMP4+NEURON_33_local_c1->{2}NEURON_33_local_c1
+
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_67_local_TMP1->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_67_local_TMP1+NEURON_33_local_MACC_33_local_Y5
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_67_local_TMP2->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_67_local_TMP2+NEURON_33_local_MACC_33_local_Y5
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y5->{2}NEURON_33_local_c1
+
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_67_local_TMP3->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_67_local_TMP3+NEURON_33_local_MACC_33_local_Y6
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_67_local_TMP4->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_MULC_67_local_TMP4+NEURON_33_local_MACC_33_local_Y6
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y6->{2}NEURON_33_local_c1
+
+
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y3->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y3+NEURON_33_local_Y0
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y5->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y5+NEURON_33_local_Y0
+|NEURON_33_local_c1+NEURON_33_local_Y0->{2}NEURON_33_local_c1
+
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y4->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y4+NEURON_33_local_Y1
+|NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y6->{2}NEURON_33_local_c1+NEURON_33_local_MACC_33_local_Y6+NEURON_33_local_Y1
+|NEURON_33_local_c1+NEURON_33_local_Y1->{2}NEURON_33_local_c1
+|NEURON_33_local_c1+NEURON_33_local_Y0+NEURON_33_local_Y1->{2}NEURON_33_local_c1
+//第二步 W00P偏置计算
+
+|NEURON_33_local_c3+NEURON_33_local_Y0->{2}NEURON_33_local_c3+NEURON_33_local_Y0+NEURON_33_local_YTMP0
+|NEURON_33_local_c3+W00P->{2}NEURON_33_local_c3+W00P+NEURON_33_local_YTMP0
+|NEURON_33_local_c3+NEURON_33_local_YTMP0->{2}NEURON_33_local_c3
+
+|NEURON_33_local_c3+NEURON_33_local_Y1->{2}NEURON_33_local_c3+NEURON_33_local_Y1+NEURON_33_local_YTMP1
+|NEURON_33_local_c3+W00N->{2}NEURON_33_local_c3+W00N+NEURON_33_local_YTMP1
+|NEURON_33_local_c3+NEURON_33_local_YTMP1->{2}NEURON_33_local_c3
+//第二步tanh计算
+
+| 1 NEURON_33_local_TANHC_33_local_c1
+| 1e-6 NEURON_33_local_TANHC_33_local_c2
+| 1e-6 NEURON_33_local_TANHC_33_local_c3
+| 1e-6 NEURON_33_local_TANHC_33_local_c4
+| 1e-6 NEURON_33_local_TANHC_33_local_c5
+| 1 NEURON_33_local_TANHC_33_local_c6
+
+
+| NEURON_33_local_TANHC_33_local_c1 + NEURON_33_local_TANHC_33_local_c2 + NEURON_33_local_c5 ->{1} NEURON_33_local_TANHC_33_local_c2 + NEURON_33_local_TANHC_33_local_c2+ NEURON_33_local_c5
+| NEURON_33_local_TANHC_33_local_c2 + NEURON_33_local_TANHC_33_local_c3+ NEURON_33_local_c5 ->{1} NEURON_33_local_TANHC_33_local_c3 + NEURON_33_local_TANHC_33_local_c3+ NEURON_33_local_c5
+| NEURON_33_local_TANHC_33_local_c3 + NEURON_33_local_TANHC_33_local_c4 + NEURON_33_local_c5->{1} NEURON_33_local_TANHC_33_local_c4 + NEURON_33_local_TANHC_33_local_c4+ NEURON_33_local_c5
+| NEURON_33_local_TANHC_33_local_c4 + NEURON_33_local_TANHC_33_local_c5 + NEURON_33_local_c5 ->{1} NEURON_33_local_TANHC_33_local_c5 + NEURON_33_local_TANHC_33_local_c5+ NEURON_33_local_c5
+| NEURON_33_local_TANHC_33_local_c5 + NEURON_33_local_TANHC_33_local_c6+ NEURON_33_local_c5 ->{1} NEURON_33_local_TANHC_33_local_c6 + NEURON_33_local_TANHC_33_local_c6+ NEURON_33_local_c5
+| NEURON_33_local_TANHC_33_local_c6 + NEURON_33_local_TANHC_33_local_c1 + NEURON_33_local_c5->{1} NEURON_33_local_TANHC_33_local_c1 + NEURON_33_local_TANHC_33_local_c1+ NEURON_33_local_c5
+
+| NEURON_33_local_TANHC_33_local_c3+NEURON_33_local_YTMP0+NEURON_33_local_YTMP1+NEURON_33_local_c5->{2}NEURON_33_local_TANHC_33_local_c3+NEURON_33_local_c5
+//正分量逻辑 
+|NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_YTMP0+NEURON_33_local_c5->{2}NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_YTMP0+H0P+NEURON_33_local_c5
+|NEURON_33_local_YTMP0+H0P+H0P+NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_c5->{2}NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_YTMP0+H0P+NEURON_33_local_c5
+|NEURON_33_local_YTMP0+NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_c5->{2}NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_c5
+//负分量逻辑 
+|NEURON_33_local_YTMP1+NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_c5->{2}NEURON_33_local_YTMP1+H0N+NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_c5
+|NEURON_33_local_YTMP1+H0N+H0N+NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_c5->{2}NEURON_33_local_YTMP1+H0N+NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_c5
+|NEURON_33_local_YTMP1+NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_c5->{2}NEURON_33_local_TANHC_33_local_c5+NEURON_33_local_c5
+//需要三时钟
+| 1 NEURON_34_local_c1
+| 1e-6 NEURON_34_local_c2
+| 1e-6 NEURON_34_local_c3
+| 1e-6 NEURON_34_local_c4
+| 1e-6 NEURON_34_local_c5
+| 1 NEURON_34_local_c6
+| 0 NEURON_34_local_YTMP
+| 0 NEURON_34_local_Y0
+| 0 NEURON_34_local_Y1
+| 0 NEURON_34_local_YTMP0
+| 0 NEURON_34_local_YTMP1
+
+
+| NEURON_34_local_c1 + NEURON_34_local_c2 + clock1 ->{0.035} NEURON_34_local_c2 + NEURON_34_local_c2+ clock1
+| NEURON_34_local_c2 + NEURON_34_local_c3+ clock1 ->{0.035} NEURON_34_local_c3 + NEURON_34_local_c3+ clock1
+| NEURON_34_local_c3 + NEURON_34_local_c4 + clock1->{0.035} NEURON_34_local_c4 + NEURON_34_local_c4+ clock1
+| NEURON_34_local_c4 + NEURON_34_local_c5 + clock1 ->{0.035} NEURON_34_local_c5 + NEURON_34_local_c5+ clock1
+| NEURON_34_local_c5 + NEURON_34_local_c6+ clock1 ->{0.035} NEURON_34_local_c6 + NEURON_34_local_c6+ clock1
+| NEURON_34_local_c6 + NEURON_34_local_c1 + clock1->{0.035} NEURON_34_local_c1 + NEURON_34_local_c1+ clock1
+//第一步，MAC计算
+
+
+| 0 NEURON_34_local_MACC_34_local_Y3
+| 0 NEURON_34_local_MACC_34_local_Y4
+| 0 NEURON_34_local_MACC_34_local_Y5
+| 0 NEURON_34_local_MACC_34_local_Y6
+
+
+| 0 NEURON_34_local_MACC_34_local_MULC_68_local_TMP1
+| 0 NEURON_34_local_MACC_34_local_MULC_68_local_TMP2
+| 0 NEURON_34_local_MACC_34_local_MULC_68_local_TMP3
+| 0 NEURON_34_local_MACC_34_local_MULC_68_local_TMP4
+
+|X1P+W11P+NEURON_34_local_c1->{2}X1P+W11P+NEURON_34_local_MACC_34_local_MULC_68_local_TMP1+NEURON_34_local_c1
+|NEURON_34_local_MACC_34_local_MULC_68_local_TMP1+NEURON_34_local_c1->{2}NEURON_34_local_c1
+
+|X1N+W11N+NEURON_34_local_c1->{2}X1N+W11N+NEURON_34_local_MACC_34_local_MULC_68_local_TMP2+NEURON_34_local_c1
+|NEURON_34_local_MACC_34_local_MULC_68_local_TMP2+NEURON_34_local_c1->{2}NEURON_34_local_c1
+
+|X1P+W11N+NEURON_34_local_c1->{2}X1P+W11N+NEURON_34_local_MACC_34_local_MULC_68_local_TMP3+NEURON_34_local_c1
+|NEURON_34_local_MACC_34_local_MULC_68_local_TMP3+NEURON_34_local_c1->{2}NEURON_34_local_c1
+
+|X1N+W11P+NEURON_34_local_c1->{2}X1N+W11P+NEURON_34_local_MACC_34_local_MULC_68_local_TMP4+NEURON_34_local_c1
+|NEURON_34_local_MACC_34_local_MULC_68_local_TMP4+NEURON_34_local_c1->{2}NEURON_34_local_c1
+
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_68_local_TMP1->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_68_local_TMP1+NEURON_34_local_MACC_34_local_Y3
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_68_local_TMP2->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_68_local_TMP2+NEURON_34_local_MACC_34_local_Y3
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y3->{2}NEURON_34_local_c1
+
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_68_local_TMP3->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_68_local_TMP3+NEURON_34_local_MACC_34_local_Y4
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_68_local_TMP4->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_68_local_TMP4+NEURON_34_local_MACC_34_local_Y4
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y4->{2}NEURON_34_local_c1
+
+
+| 0 NEURON_34_local_MACC_34_local_MULC_69_local_TMP1
+| 0 NEURON_34_local_MACC_34_local_MULC_69_local_TMP2
+| 0 NEURON_34_local_MACC_34_local_MULC_69_local_TMP3
+| 0 NEURON_34_local_MACC_34_local_MULC_69_local_TMP4
+
+|X2P+W12P+NEURON_34_local_c1->{2}X2P+W12P+NEURON_34_local_MACC_34_local_MULC_69_local_TMP1+NEURON_34_local_c1
+|NEURON_34_local_MACC_34_local_MULC_69_local_TMP1+NEURON_34_local_c1->{2}NEURON_34_local_c1
+
+|X2N+W12N+NEURON_34_local_c1->{2}X2N+W12N+NEURON_34_local_MACC_34_local_MULC_69_local_TMP2+NEURON_34_local_c1
+|NEURON_34_local_MACC_34_local_MULC_69_local_TMP2+NEURON_34_local_c1->{2}NEURON_34_local_c1
+
+|X2P+W12N+NEURON_34_local_c1->{2}X2P+W12N+NEURON_34_local_MACC_34_local_MULC_69_local_TMP3+NEURON_34_local_c1
+|NEURON_34_local_MACC_34_local_MULC_69_local_TMP3+NEURON_34_local_c1->{2}NEURON_34_local_c1
+
+|X2N+W12P+NEURON_34_local_c1->{2}X2N+W12P+NEURON_34_local_MACC_34_local_MULC_69_local_TMP4+NEURON_34_local_c1
+|NEURON_34_local_MACC_34_local_MULC_69_local_TMP4+NEURON_34_local_c1->{2}NEURON_34_local_c1
+
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_69_local_TMP1->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_69_local_TMP1+NEURON_34_local_MACC_34_local_Y5
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_69_local_TMP2->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_69_local_TMP2+NEURON_34_local_MACC_34_local_Y5
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y5->{2}NEURON_34_local_c1
+
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_69_local_TMP3->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_69_local_TMP3+NEURON_34_local_MACC_34_local_Y6
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_69_local_TMP4->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_MULC_69_local_TMP4+NEURON_34_local_MACC_34_local_Y6
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y6->{2}NEURON_34_local_c1
+
+
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y3->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y3+NEURON_34_local_Y0
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y5->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y5+NEURON_34_local_Y0
+|NEURON_34_local_c1+NEURON_34_local_Y0->{2}NEURON_34_local_c1
+
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y4->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y4+NEURON_34_local_Y1
+|NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y6->{2}NEURON_34_local_c1+NEURON_34_local_MACC_34_local_Y6+NEURON_34_local_Y1
+|NEURON_34_local_c1+NEURON_34_local_Y1->{2}NEURON_34_local_c1
+|NEURON_34_local_c1+NEURON_34_local_Y0+NEURON_34_local_Y1->{2}NEURON_34_local_c1
+//第二步 W10P偏置计算
+
+|NEURON_34_local_c3+NEURON_34_local_Y0->{2}NEURON_34_local_c3+NEURON_34_local_Y0+NEURON_34_local_YTMP0
+|NEURON_34_local_c3+W10P->{2}NEURON_34_local_c3+W10P+NEURON_34_local_YTMP0
+|NEURON_34_local_c3+NEURON_34_local_YTMP0->{2}NEURON_34_local_c3
+
+|NEURON_34_local_c3+NEURON_34_local_Y1->{2}NEURON_34_local_c3+NEURON_34_local_Y1+NEURON_34_local_YTMP1
+|NEURON_34_local_c3+W10N->{2}NEURON_34_local_c3+W10N+NEURON_34_local_YTMP1
+|NEURON_34_local_c3+NEURON_34_local_YTMP1->{2}NEURON_34_local_c3
+//第二步tanh计算
+
+| 1 NEURON_34_local_TANHC_34_local_c1
+| 1e-6 NEURON_34_local_TANHC_34_local_c2
+| 1e-6 NEURON_34_local_TANHC_34_local_c3
+| 1e-6 NEURON_34_local_TANHC_34_local_c4
+| 1e-6 NEURON_34_local_TANHC_34_local_c5
+| 1 NEURON_34_local_TANHC_34_local_c6
+
+
+| NEURON_34_local_TANHC_34_local_c1 + NEURON_34_local_TANHC_34_local_c2 + NEURON_34_local_c5 ->{1} NEURON_34_local_TANHC_34_local_c2 + NEURON_34_local_TANHC_34_local_c2+ NEURON_34_local_c5
+| NEURON_34_local_TANHC_34_local_c2 + NEURON_34_local_TANHC_34_local_c3+ NEURON_34_local_c5 ->{1} NEURON_34_local_TANHC_34_local_c3 + NEURON_34_local_TANHC_34_local_c3+ NEURON_34_local_c5
+| NEURON_34_local_TANHC_34_local_c3 + NEURON_34_local_TANHC_34_local_c4 + NEURON_34_local_c5->{1} NEURON_34_local_TANHC_34_local_c4 + NEURON_34_local_TANHC_34_local_c4+ NEURON_34_local_c5
+| NEURON_34_local_TANHC_34_local_c4 + NEURON_34_local_TANHC_34_local_c5 + NEURON_34_local_c5 ->{1} NEURON_34_local_TANHC_34_local_c5 + NEURON_34_local_TANHC_34_local_c5+ NEURON_34_local_c5
+| NEURON_34_local_TANHC_34_local_c5 + NEURON_34_local_TANHC_34_local_c6+ NEURON_34_local_c5 ->{1} NEURON_34_local_TANHC_34_local_c6 + NEURON_34_local_TANHC_34_local_c6+ NEURON_34_local_c5
+| NEURON_34_local_TANHC_34_local_c6 + NEURON_34_local_TANHC_34_local_c1 + NEURON_34_local_c5->{1} NEURON_34_local_TANHC_34_local_c1 + NEURON_34_local_TANHC_34_local_c1+ NEURON_34_local_c5
+
+| NEURON_34_local_TANHC_34_local_c3+NEURON_34_local_YTMP0+NEURON_34_local_YTMP1+NEURON_34_local_c5->{2}NEURON_34_local_TANHC_34_local_c3+NEURON_34_local_c5
+//正分量逻辑 
+|NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_YTMP0+NEURON_34_local_c5->{2}NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_YTMP0+H1P+NEURON_34_local_c5
+|NEURON_34_local_YTMP0+H1P+H1P+NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_c5->{2}NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_YTMP0+H1P+NEURON_34_local_c5
+|NEURON_34_local_YTMP0+NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_c5->{2}NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_c5
+//负分量逻辑 
+|NEURON_34_local_YTMP1+NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_c5->{2}NEURON_34_local_YTMP1+H1N+NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_c5
+|NEURON_34_local_YTMP1+H1N+H1N+NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_c5->{2}NEURON_34_local_YTMP1+H1N+NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_c5
+|NEURON_34_local_YTMP1+NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_c5->{2}NEURON_34_local_TANHC_34_local_c5+NEURON_34_local_c5
+//需要三时钟
+| 1 NEURON_35_local_c1
+| 1e-6 NEURON_35_local_c2
+| 1e-6 NEURON_35_local_c3
+| 1e-6 NEURON_35_local_c4
+| 1e-6 NEURON_35_local_c5
+| 1 NEURON_35_local_c6
+| 0 NEURON_35_local_YTMP
+| 0 NEURON_35_local_Y0
+| 0 NEURON_35_local_Y1
+| 0 NEURON_35_local_YTMP0
+| 0 NEURON_35_local_YTMP1
+
+
+| NEURON_35_local_c1 + NEURON_35_local_c2 + clock3 ->{0.035} NEURON_35_local_c2 + NEURON_35_local_c2+ clock3
+| NEURON_35_local_c2 + NEURON_35_local_c3+ clock3 ->{0.035} NEURON_35_local_c3 + NEURON_35_local_c3+ clock3
+| NEURON_35_local_c3 + NEURON_35_local_c4 + clock3->{0.035} NEURON_35_local_c4 + NEURON_35_local_c4+ clock3
+| NEURON_35_local_c4 + NEURON_35_local_c5 + clock3 ->{0.035} NEURON_35_local_c5 + NEURON_35_local_c5+ clock3
+| NEURON_35_local_c5 + NEURON_35_local_c6+ clock3 ->{0.035} NEURON_35_local_c6 + NEURON_35_local_c6+ clock3
+| NEURON_35_local_c6 + NEURON_35_local_c1 + clock3->{0.035} NEURON_35_local_c1 + NEURON_35_local_c1+ clock3
+//第一步，MAC计算
+
+
+| 0 NEURON_35_local_MACC_35_local_Y3
+| 0 NEURON_35_local_MACC_35_local_Y4
+| 0 NEURON_35_local_MACC_35_local_Y5
+| 0 NEURON_35_local_MACC_35_local_Y6
+
+
+| 0 NEURON_35_local_MACC_35_local_MULC_70_local_TMP1
+| 0 NEURON_35_local_MACC_35_local_MULC_70_local_TMP2
+| 0 NEURON_35_local_MACC_35_local_MULC_70_local_TMP3
+| 0 NEURON_35_local_MACC_35_local_MULC_70_local_TMP4
+
+|H0P+W21P+NEURON_35_local_c1->{2}H0P+W21P+NEURON_35_local_MACC_35_local_MULC_70_local_TMP1+NEURON_35_local_c1
+|NEURON_35_local_MACC_35_local_MULC_70_local_TMP1+NEURON_35_local_c1->{2}NEURON_35_local_c1
+
+|H0N+W21N+NEURON_35_local_c1->{2}H0N+W21N+NEURON_35_local_MACC_35_local_MULC_70_local_TMP2+NEURON_35_local_c1
+|NEURON_35_local_MACC_35_local_MULC_70_local_TMP2+NEURON_35_local_c1->{2}NEURON_35_local_c1
+
+|H0P+W21N+NEURON_35_local_c1->{2}H0P+W21N+NEURON_35_local_MACC_35_local_MULC_70_local_TMP3+NEURON_35_local_c1
+|NEURON_35_local_MACC_35_local_MULC_70_local_TMP3+NEURON_35_local_c1->{2}NEURON_35_local_c1
+
+|H0N+W21P+NEURON_35_local_c1->{2}H0N+W21P+NEURON_35_local_MACC_35_local_MULC_70_local_TMP4+NEURON_35_local_c1
+|NEURON_35_local_MACC_35_local_MULC_70_local_TMP4+NEURON_35_local_c1->{2}NEURON_35_local_c1
+
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_70_local_TMP1->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_70_local_TMP1+NEURON_35_local_MACC_35_local_Y3
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_70_local_TMP2->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_70_local_TMP2+NEURON_35_local_MACC_35_local_Y3
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y3->{2}NEURON_35_local_c1
+
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_70_local_TMP3->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_70_local_TMP3+NEURON_35_local_MACC_35_local_Y4
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_70_local_TMP4->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_70_local_TMP4+NEURON_35_local_MACC_35_local_Y4
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y4->{2}NEURON_35_local_c1
+
+
+| 0 NEURON_35_local_MACC_35_local_MULC_71_local_TMP1
+| 0 NEURON_35_local_MACC_35_local_MULC_71_local_TMP2
+| 0 NEURON_35_local_MACC_35_local_MULC_71_local_TMP3
+| 0 NEURON_35_local_MACC_35_local_MULC_71_local_TMP4
+
+|H1P+W22P+NEURON_35_local_c1->{2}H1P+W22P+NEURON_35_local_MACC_35_local_MULC_71_local_TMP1+NEURON_35_local_c1
+|NEURON_35_local_MACC_35_local_MULC_71_local_TMP1+NEURON_35_local_c1->{2}NEURON_35_local_c1
+
+|H1N+W22N+NEURON_35_local_c1->{2}H1N+W22N+NEURON_35_local_MACC_35_local_MULC_71_local_TMP2+NEURON_35_local_c1
+|NEURON_35_local_MACC_35_local_MULC_71_local_TMP2+NEURON_35_local_c1->{2}NEURON_35_local_c1
+
+|H1P+W22N+NEURON_35_local_c1->{2}H1P+W22N+NEURON_35_local_MACC_35_local_MULC_71_local_TMP3+NEURON_35_local_c1
+|NEURON_35_local_MACC_35_local_MULC_71_local_TMP3+NEURON_35_local_c1->{2}NEURON_35_local_c1
+
+|H1N+W22P+NEURON_35_local_c1->{2}H1N+W22P+NEURON_35_local_MACC_35_local_MULC_71_local_TMP4+NEURON_35_local_c1
+|NEURON_35_local_MACC_35_local_MULC_71_local_TMP4+NEURON_35_local_c1->{2}NEURON_35_local_c1
+
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_71_local_TMP1->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_71_local_TMP1+NEURON_35_local_MACC_35_local_Y5
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_71_local_TMP2->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_71_local_TMP2+NEURON_35_local_MACC_35_local_Y5
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y5->{2}NEURON_35_local_c1
+
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_71_local_TMP3->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_71_local_TMP3+NEURON_35_local_MACC_35_local_Y6
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_71_local_TMP4->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_MULC_71_local_TMP4+NEURON_35_local_MACC_35_local_Y6
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y6->{2}NEURON_35_local_c1
+
+
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y3->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y3+NEURON_35_local_Y0
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y5->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y5+NEURON_35_local_Y0
+|NEURON_35_local_c1+NEURON_35_local_Y0->{2}NEURON_35_local_c1
+
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y4->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y4+NEURON_35_local_Y1
+|NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y6->{2}NEURON_35_local_c1+NEURON_35_local_MACC_35_local_Y6+NEURON_35_local_Y1
+|NEURON_35_local_c1+NEURON_35_local_Y1->{2}NEURON_35_local_c1
+|NEURON_35_local_c1+NEURON_35_local_Y0+NEURON_35_local_Y1->{2}NEURON_35_local_c1
+//第二步 W20P偏置计算
+
+|NEURON_35_local_c3+NEURON_35_local_Y0->{2}NEURON_35_local_c3+NEURON_35_local_Y0+NEURON_35_local_YTMP0
+|NEURON_35_local_c3+W20P->{2}NEURON_35_local_c3+W20P+NEURON_35_local_YTMP0
+|NEURON_35_local_c3+NEURON_35_local_YTMP0->{2}NEURON_35_local_c3
+
+|NEURON_35_local_c3+NEURON_35_local_Y1->{2}NEURON_35_local_c3+NEURON_35_local_Y1+NEURON_35_local_YTMP1
+|NEURON_35_local_c3+W20N->{2}NEURON_35_local_c3+W20N+NEURON_35_local_YTMP1
+|NEURON_35_local_c3+NEURON_35_local_YTMP1->{2}NEURON_35_local_c3
+//第三步tanh计算
+
+| 1 NEURON_35_local_TANHC_35_local_c1
+| 1e-6 NEURON_35_local_TANHC_35_local_c2
+| 1e-6 NEURON_35_local_TANHC_35_local_c3
+| 1e-6 NEURON_35_local_TANHC_35_local_c4
+| 1e-6 NEURON_35_local_TANHC_35_local_c5
+| 1 NEURON_35_local_TANHC_35_local_c6
+
+
+| NEURON_35_local_TANHC_35_local_c1 + NEURON_35_local_TANHC_35_local_c2 + NEURON_35_local_c5 ->{1} NEURON_35_local_TANHC_35_local_c2 + NEURON_35_local_TANHC_35_local_c2+ NEURON_35_local_c5
+| NEURON_35_local_TANHC_35_local_c2 + NEURON_35_local_TANHC_35_local_c3+ NEURON_35_local_c5 ->{1} NEURON_35_local_TANHC_35_local_c3 + NEURON_35_local_TANHC_35_local_c3+ NEURON_35_local_c5
+| NEURON_35_local_TANHC_35_local_c3 + NEURON_35_local_TANHC_35_local_c4 + NEURON_35_local_c5->{1} NEURON_35_local_TANHC_35_local_c4 + NEURON_35_local_TANHC_35_local_c4+ NEURON_35_local_c5
+| NEURON_35_local_TANHC_35_local_c4 + NEURON_35_local_TANHC_35_local_c5 + NEURON_35_local_c5 ->{1} NEURON_35_local_TANHC_35_local_c5 + NEURON_35_local_TANHC_35_local_c5+ NEURON_35_local_c5
+| NEURON_35_local_TANHC_35_local_c5 + NEURON_35_local_TANHC_35_local_c6+ NEURON_35_local_c5 ->{1} NEURON_35_local_TANHC_35_local_c6 + NEURON_35_local_TANHC_35_local_c6+ NEURON_35_local_c5
+| NEURON_35_local_TANHC_35_local_c6 + NEURON_35_local_TANHC_35_local_c1 + NEURON_35_local_c5->{1} NEURON_35_local_TANHC_35_local_c1 + NEURON_35_local_TANHC_35_local_c1+ NEURON_35_local_c5
+
+| NEURON_35_local_TANHC_35_local_c3+NEURON_35_local_YTMP0+NEURON_35_local_YTMP1+NEURON_35_local_c5->{2}NEURON_35_local_TANHC_35_local_c3+NEURON_35_local_c5
+//正分量逻辑
+|NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_YTMP0+NEURON_35_local_c5->{2}NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_YTMP0+c0+NEURON_35_local_c5
+|NEURON_35_local_YTMP0+c0+c0+NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_c5->{2}NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_YTMP0+c0+NEURON_35_local_c5
+|NEURON_35_local_YTMP0+NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_c5->{2}NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_c5
+//负分量逻辑 
+|NEURON_35_local_YTMP1+NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_c5->{2}NEURON_35_local_YTMP1+c1+NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_c5
+|NEURON_35_local_YTMP1+c1+c1+NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_c5->{2}NEURON_35_local_YTMP1+c1+NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_c5
+|NEURON_35_local_YTMP1+NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_c5->{2}NEURON_35_local_TANHC_35_local_c5+NEURON_35_local_c5
